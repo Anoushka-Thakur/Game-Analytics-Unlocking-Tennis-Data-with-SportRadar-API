@@ -1,0 +1,26 @@
+{
+  "rankings": [
+    {
+      "rank": 1,
+      "points": 8000,
+      "competitor": {
+        "id": "sr:competitor:101",
+        "name": "Player A / Player B",
+        "country": "USA",
+        "country_code": "USA",
+        "abbreviation": "A/B"
+      }
+    },
+    {
+      "rank": 2,
+      "points": 7600,
+      "competitor": {
+        "id": "sr:competitor:102",
+        "name": "Player C / Player D",
+        "country": "Spain",
+        "country_code": "ESP",
+        "abbreviation": "C/D"
+      }
+    }
+  ]
+}
