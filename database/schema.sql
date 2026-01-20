@@ -14,7 +14,6 @@ CREATE TABLE categories (
 );
 -- =====================
 -- 2. Complexes
--- =====================
 CREATE TABLE complexes (
     complex_id VARCHAR(50) PRIMARY KEY,
     complex_name VARCHAR(100) NOT NULL
