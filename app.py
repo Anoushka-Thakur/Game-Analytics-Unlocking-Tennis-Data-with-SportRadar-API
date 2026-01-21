@@ -1,8 +1,10 @@
-
 import streamlit as st
 import pandas as pd
 import sqlite3
 import matplotlib.pyplot as plt
+
+# Move page config before any other Streamlit API usage
+st.set_page_config(page_title="🎾 Tennis Analytics Dashboard", layout="wide")
 
 # ------------------------------------
 # DATABASE CONNECTION (SQLite)
@@ -14,7 +16,8 @@ def get_connection():
 
 conn = get_connection()
 
-st.set_page_config(page_title="🎾 Tennis Analytics Dashboard", layout="wide")
+# ------------------------------------
+
 st.markdown(
     """
     <style>
@@ -101,8 +104,8 @@ if menu == "Homepage Dashboard":
     )["cnt"][0]
 
     highest_points = pd.read_sql(
-        "SELECT MAX(score) AS max_score FROM competitor_rankings", conn
-    )["max_score"][0]
+        "SELECT MAX(points) AS max_points FROM competitor_rankings", conn
+    )["max_points"][0]
 
     col1.metric("Total Competitors", total_competitors)
     col2.metric("Countries Represented", total_countries)
@@ -118,17 +121,14 @@ elif menu == "Search & Filter Competitors":
     min_points = st.slider("Minimum Points", 0, 20000, 0)
 
     query = """
-        SELECT
-            c.name,
-            c.country,
-            r.rank,
-            r.score
-        FROM competitors c
-        JOIN competitor_rankings r
-            ON c.competitor_id = r.competitor_id
-        WHERE c.name LIKE ?
-          AND r.score >= ?
-        ORDER BY r.rank
+    SELECT 
+        name, 
+        country, 
+        "rank", 
+        points 
+    FROM competitors 
+    WHERE name LIKE ? AND points >= ?
+    ORDER BY "rank" ASC
     """
 
     df = pd.read_sql(query, conn, params=[f"%{name}%", min_points])
@@ -155,13 +155,12 @@ elif menu == "Competitor Details":
         c.name, 
         c.country, 
         r.rank, 
-        r.score
+        r.points
     FROM competitors c 
     JOIN competitor_rankings r ON c.competitor_id = r.competitor_id 
     WHERE c.name = ? 
     LIMIT 1
     '''
-
 
     details = pd.read_sql(details_query, conn, params=[selected])
     st.table(details)
@@ -176,12 +175,12 @@ elif menu == "Country Analysis":
     SELECT
     c.country,
     COUNT(DISTINCT c.competitor_id) AS total_competitors,
-    AVG(r.score) AS avg_score
+    AVG(r.points) AS avg_points
     FROM competitors c
     JOIN competitor_rankings r
     ON c.competitor_id = r.competitor_id
     GROUP BY c.country
-    ORDER BY avg_score DESC
+    ORDER BY avg_points DESC
     """
 
     df = pd.read_sql(country_query, conn)
@@ -197,17 +196,17 @@ elif menu == "Leaderboards":
 
     with col1:
         st.markdown("### Top Ranked Players")
-        top_ranked = pd.read_sql("""
-        SELECT
-            name,
-            country,
-            rank,
-            score
-        FROM competitors
-        ORDER BY rank
-        LIMIT 10;
-        """,
-            conn
+        top_ranked = pd.read_sql(
+            """
+            SELECT 
+                name, 
+                country,
+                "rank", 
+                points 
+            FROM competitors 
+            ORDER BY "rank" ASC;
+            """,
+            conn,
         )
         st.dataframe(top_ranked, use_container_width=True)
 
@@ -215,16 +214,13 @@ elif menu == "Leaderboards":
         st.markdown("### Highest Points")
         top_points = pd.read_sql(
             """
-            SELECT
-                c.name,
-                c.country,
-                r.score
-            FROM competitors c
-            JOIN competitor_rankings r
-                ON c.competitor_id = r.competitor_id
-            ORDER BY r.score DESC
-            LIMIT 10
+            SELECT 
+                name, 
+                country, 
+                points 
+            FROM competitors 
+            ORDER BY points DESC;
             """,
-            conn
+            conn,
         )
         st.dataframe(top_points, use_container_width=True)
