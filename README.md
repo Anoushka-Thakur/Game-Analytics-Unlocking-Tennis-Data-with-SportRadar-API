@@ -86,7 +86,6 @@ Features Implemented
 
 2. Rank‑based filtering
 
-
 ### Project Members
 
 #### Kumari Akanksha
