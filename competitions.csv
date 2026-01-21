@@ -1,0 +1,3 @@
+competition_id,competition_name,parent_id,type,gender,category_id
+c1,ATP Vienna,,singles,men,cat1
+c2,WTA Madrid,,doubles,women,cat2

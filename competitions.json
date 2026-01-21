@@ -1,0 +1,26 @@
+{
+  "competitions": [
+    {
+      "id": "c1",
+      "name": "ATP Vienna",
+      "parent_id": null,
+      "type": "singles",
+      "gender": "men",
+      "category": {
+        "id": "cat1",
+        "name": "ATP"
+      }
+    },
+    {
+      "id": "c2",
+      "name": "WTA Madrid",
+      "parent_id": null,
+      "type": "doubles",
+      "gender": "women",
+      "category": {
+        "id": "cat2",
+        "name": "WTA"
+      }
+    }
+  ]
+}
