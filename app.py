@@ -1,3 +1,4 @@
+from tkinter import ON
 import streamlit as st
 import pandas as pd
 import sqlite3
@@ -100,8 +101,8 @@ if menu == "Homepage Dashboard":
     )["cnt"][0]
 
     highest_points = pd.read_sql(
-        "SELECT MAX(points) AS max_points FROM competitor_rankings", conn
-    )["max_points"][0]
+        "SELECT MAX(score) AS max_score FROM competitor_rankings", conn
+    )["max_score"][0]
 
     col1.metric("Total Competitors", total_competitors)
     col2.metric("Countries Represented", total_countries)
@@ -118,15 +119,15 @@ elif menu == "Search & Filter Competitors":
 
     query = """
         SELECT
-            c.competitor_name,
+            c.name,
             c.country,
             r.rank,
-            r.points
+            r.score
         FROM competitors c
         JOIN competitor_rankings r
             ON c.competitor_id = r.competitor_id
-        WHERE c.competitor_name LIKE ?
-          AND r.points >= ?
+        WHERE c.name LIKE ?
+          AND r.score >= ?
         ORDER BY r.rank
     """
 
@@ -140,30 +141,27 @@ elif menu == "Competitor Details":
     st.subheader("👤 Competitor Details")
 
     competitors = pd.read_sql(
-        "SELECT competitor_name FROM competitors ORDER BY competitor_name",
+        "SELECT name FROM competitors ORDER BY name",
         conn
     )
 
     selected = st.selectbox(
         "Select Competitor",
-        competitors["competitor_name"]
+        competitors["name"]
     )
 
-    details_query = """
-        SELECT
-            c.competitor_name,
-            c.country,
-            r.rank,
-            r.points,
-            r.movement,
-            r.competitions_played
-        FROM competitors c
-        JOIN competitor_rankings r
-            ON c.competitor_id = r.competitor_id
-        WHERE c.competitor_name = ?
-        ORDER BY r.ranking_date DESC
-        LIMIT 1
-    """
+    details_query = '''
+    SELECT 
+        c.name, 
+        c.country, 
+        r.rank, 
+        r.score
+    FROM competitors c 
+    JOIN competitor_rankings r ON c.competitor_id = r.competitor_id 
+    WHERE c.name = ? 
+    LIMIT 1
+    '''
+
 
     details = pd.read_sql(details_query, conn, params=[selected])
     st.table(details)
@@ -175,15 +173,15 @@ elif menu == "Country Analysis":
     st.subheader("🌍 Country-wise Analysis")
 
     country_query = """
-        SELECT
-            c.country,
-            COUNT(DISTINCT c.competitor_id) AS total_competitors,
-            AVG(r.points) AS avg_points
-        FROM competitors c
-        JOIN competitor_rankings r
-            ON c.competitor_id = r.competitor_id
-        GROUP BY c.country
-        ORDER BY avg_points DESC
+    SELECT
+    c.country,
+    COUNT(DISTINCT c.competitor_id) AS total_competitors,
+    AVG(r.score) AS avg_score
+    FROM competitors c
+    JOIN competitor_rankings r
+    ON c.competitor_id = r.competitor_id
+    GROUP BY c.country
+    ORDER BY avg_score DESC
     """
 
     df = pd.read_sql(country_query, conn)
@@ -204,7 +202,7 @@ elif menu == "Leaderboards":
             name,
             country,
             rank,
-            points
+            score
         FROM competitors
         ORDER BY rank
         LIMIT 10;
@@ -218,13 +216,13 @@ elif menu == "Leaderboards":
         top_points = pd.read_sql(
             """
             SELECT
-                c.competitor_name,
+                c.name,
                 c.country,
-                r.points
+                r.score
             FROM competitors c
             JOIN competitor_rankings r
                 ON c.competitor_id = r.competitor_id
-            ORDER BY r.points DESC
+            ORDER BY r.score DESC
             LIMIT 10
             """,
             conn

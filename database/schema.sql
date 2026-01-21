@@ -34,8 +34,6 @@ CREATE TABLE competitors (
 );
 
 
-
-
 -- =====================
 -- 4. Competitions
 -- =====================
