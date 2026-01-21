@@ -99,51 +99,80 @@ WHERE c.complex_name = 'Nacional';
 
 
 --3️ COMPETITOR RANKINGS 
---1. Competitors with rank and points
-SELECT c.name, r.rank, r.points
-FROM competitors c
-JOIN competitor_rankings r
-ON c.competitor_id = r.competitor_id;
+-- 1. Total number of competitors
+SELECT COUNT(*) AS total_competitors
+FROM competitors;
 
---2. Top 5 ranked competitors
-SELECT c.name, r.rank
-FROM competitors c
-JOIN competitor_rankings r
-ON c.competitor_id = r.competitor_id
-WHERE r.rank <= 5;
+-- 2. Number of countries represented
+SELECT COUNT(DISTINCT country) AS total_countries
+FROM competitors;
 
---3. Competitors with no rank movement
-SELECT c.name
-FROM competitors c
-JOIN competitor_rankings r
-ON c.competitor_id = r.competitor_id
-WHERE r.movement = 0;
+-- 3. Highest points scored
+SELECT
+    name,
+    MAX(points) AS highest_points
+FROM competitors;
 
---4. Total points by country (e.g., Croatia)
-SELECT c.country, SUM(r.points) AS total_points
-FROM competitors c
-JOIN competitor_rankings r
-ON c.competitor_id = r.competitor_id
-WHERE c.country = 'Croatia'
-GROUP BY c.country;
-
---5. Competitor count per country
-SELECT country, COUNT(*) AS competitor_count
+-- 4. List all competitors ordered by rank
+SELECT
+    name,
+    country,
+    rank,
+    points
 FROM competitors
-GROUP BY country;
+ORDER BY rank;
 
---6. Competitor(s) with highest points
-SELECT c.name, r.points
-FROM competitors c
-JOIN competitor_rankings r
-ON c.competitor_id = r.competitor_id
-WHERE r.points = (
-    SELECT MAX(points)
-    FROM competitor_rankings
-);
+-- 5. Search competitor by name
+SELECT
+    name,
+    country,
+    rank,
+    points
+FROM competitors
+WHERE name LIKE '%Player%'
+ORDER BY rank;
 
-SELECT COLUMN_NAME
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'competitor_rankings';
+-- 6. Filter competitors by rank range
+SELECT
+    name,
+    country,
+    rank,
+    points
+FROM competitors
+WHERE rank BETWEEN 1 AND 50
+ORDER BY rank;
+
+-- 7. Top 10 ranked competitors
+SELECT
+    name,
+    country,
+    rank,
+    points
+FROM competitors
+ORDER BY rank;
 
 
+-- 8. Top competitors by points
+SELECT
+    name,
+    country,
+    rank,
+    points
+FROM competitors
+ORDER BY points;
+
+-- 9. Country-wise competitor count
+SELECT
+    country,
+    COUNT(*) AS total_competitors
+FROM competitors
+GROUP BY country
+ORDER BY total_competitors DESC;
+
+-- 10. Country-wise average points
+SELECT
+    country,
+    AVG(points) AS avg_points
+FROM competitors
+GROUP BY country
+ORDER BY avg_points DESC;

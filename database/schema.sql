@@ -24,12 +24,16 @@ CREATE TABLE complexes (
 -- 3. Competitors
 -- =====================
 CREATE TABLE competitors (
-    competitor_id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    country VARCHAR(100) NOT NULL,
-    country_code CHAR(3) NOT NULL,
-    abbreviation VARCHAR(10) NOT NULL
+    competitor_id NVARCHAR(50) NOT NULL,
+    name NVARCHAR(200) NOT NULL,
+    country NVARCHAR(100),
+    country_code NVARCHAR(10),
+    abbreviation NVARCHAR(50),
+    rank INTEGER,
+    points INTEGER
 );
+
+
 
 
 -- =====================
@@ -62,6 +66,4 @@ CREATE TABLE venues (
     FOREIGN KEY (complex_id) REFERENCES complexes(complex_id)
 );
 
-
-
-
+----DROP TABLE IF EXISTS competitors;

@@ -1,208 +1,232 @@
 import streamlit as st
 import pandas as pd
-import pyodbc
+import sqlite3
 import matplotlib.pyplot as plt
 
-# ----------------------------
-# SQL Server Connection
-# ----------------------------
-
+# ------------------------------------
+# DATABASE CONNECTION (SQLite)
+# ------------------------------------
+@st.cache_resource
 def get_connection():
-    return pyodbc.connect(
-        "DRIVER={ODBC Driver 17 for SQL Server};"
-        "SERVER=localhost;"
-        "DATABASE=master;"
-        "Trusted_Connection=yes;"
-    )
-
-# ----------------------------
-# Page Config
-# ----------------------------
-
-st.set_page_config(page_title="Tennis Analytics Dashboard", layout="wide")
-st.title("🎾 Tennis Game Analytics Dashboard")
+    conn = sqlite3.connect("tennis.db", check_same_thread=False)
+    return conn
 
 conn = get_connection()
 
+st.set_page_config(page_title="🎾 Tennis Analytics Dashboard", layout="wide")
 st.markdown(
     """
     <style>
     /* Background image */
     .stApp {
-        background-image: url("https://in.pinterest.com/pin/19914423347483652/.jpg");
+        background-image: url("https://images.unsplash.com/photo-1505666287802-931dc83948e8");
         background-size: cover;
         background-repeat: no-repeat;
         background-attachment: fixed;
     }
 
-    /* Headings and subheaders */
-    h1, h2, h3, h4, h5, h6, .css-1v3fvcr, .css-1d391kg, .css-18ni7ap {
+    /* Headings */
+    h1, h2, h3, h4, h5, h6 {
         color: black !important;
         font-weight: bold;
     }
 
-    /* SQL code blocks */
-    .stCodeBlock, pre {
+    /* Code blocks */
+    pre {
         color: black !important;
         background-color: rgba(255,255,255,0.85) !important;
-        border-radius: 5px;
-    }
-
-    /* KPI cards */
-    .stMetric {
-        background-color: black !important;
-        color: yellow !important;
-        border-radius: 10px;
+        border-radius: 6px;
         padding: 10px;
     }
 
-    /* Tables: slightly transparent */
-    .stDataFrame div.row_widget.stDataFrame div {
+    /* KPI cards */
+    div[data-testid="metric-container"] {
+        background-color: black;
+        color: yellow;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+    }
+
+    /* Tables */
+    .stDataFrame {
         background-color: rgba(255,255,255,0.85);
-        border-radius: 5px;
+        border-radius: 8px;
     }
 
     /* Buttons */
-    button.stButton {
-        background-color: rgba(255, 255, 0, 0.85);
-        color: black;
-        font-weight: bold;
+    button {
+        background-color: rgba(255, 255, 0, 0.85) !important;
+        color: black !important;
+        font-weight: bold !important;
+        border-radius: 6px;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
-# ==================================================
-# 1️⃣ HOMEPAGE DASHBOARD – SUMMARY STATISTICS
-# ==================================================
+# ------------------------------------
+# APP TITLE
+st.title("🎾 Tennis Analytics System")
 
-st.header("📊 Homepage Dashboard")
+# ------------------------------------
+# SIDEBAR NAVIGATION
+# ------------------------------------
+menu = st.sidebar.radio(
+    "Navigation",
+    [
+        "Homepage Dashboard",
+        "Search & Filter Competitors",
+        "Competitor Details",
+        "Country Analysis",
+        "Leaderboards"
+    ]
+)
 
+# ------------------------------------
+# 1. HOMEPAGE DASHBOARD
+# ------------------------------------
+if menu == "Homepage Dashboard":
+    st.subheader("📊 Key Metrics")
 
-kpi_query = """
-SELECT 
-    COUNT(DISTINCT c.competitor_id) AS total_competitors,
-    COUNT(DISTINCT c.country) AS total_countries,
-    MAX(r.points) AS highest_points
-FROM dbo.competitors c
-JOIN dbo.competitor_rankings r
-ON c.competitor_id = r.competitor_id;
-"""
+    col1, col2, col3 = st.columns(3)
 
-kpi_df = pd.read_sql(kpi_query, conn)
+    total_competitors = pd.read_sql(
+        "SELECT COUNT(*) AS cnt FROM competitors", conn
+    )["cnt"][0]
 
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Competitors", kpi_df.loc[0, 'total_competitors'])
-col2.metric("Countries Represented", kpi_df.loc[0, 'total_countries'])
-col3.metric("Highest Points", kpi_df.loc[0, 'highest_points'])
+    total_countries = pd.read_sql(
+        "SELECT COUNT(DISTINCT country) AS cnt FROM competitors", conn
+    )["cnt"][0]
 
-# ==================================================
-# 2️⃣ SEARCH & FILTER COMPETITORS
-# ==================================================
+    highest_points = pd.read_sql(
+        "SELECT MAX(points) AS max_points FROM competitor_rankings", conn
+    )["max_points"][0]
 
-st.header("🔍 Search & Filter Competitors")
+    col1.metric("Total Competitors", total_competitors)
+    col2.metric("Countries Represented", total_countries)
+    col3.metric("Highest Points", highest_points)
 
-# Filters
-countries = pd.read_sql("SELECT DISTINCT country FROM dbo.competitors", conn)['country']
-selected_country = st.selectbox("Filter by Country", ["All"] + list(countries))
+# ------------------------------------
+# 2. SEARCH & FILTER COMPETITORS
+# ------------------------------------
+elif menu == "Search & Filter Competitors":
+    st.subheader("🔍 Search & Filter Competitors")
 
-rank_min, rank_max = st.slider("Rank Range", 1, 200, (1, 50))
-points_threshold = st.number_input("Minimum Points", min_value=0, value=0)
-search_name = st.text_input("Search Competitor by Name")
+    name = st.text_input("Search by competitor name")
+    min_points = st.slider("Minimum Points", 0, 20000, 0)
 
-filter_query = f"""
-SELECT c.name, c.country, r.rank, r.points
-FROM dbo.competitors c
-JOIN dbo.competitor_rankings r
-ON c.competitor_id = r.competitor_id
-WHERE r.rank BETWEEN {rank_min} AND {rank_max}
-AND r.points >= {points_threshold}
-"""
-
-if selected_country != "All":
-    filter_query += f" AND c.country = '{selected_country}'"
-
-if search_name:
-    filter_query += f" AND c.name LIKE '%{search_name}%'"
-
-filtered_df = pd.read_sql(filter_query, conn)
-st.dataframe(filtered_df, use_container_width=True)
-
-# ==================================================
-# 3️⃣ COMPETITOR DETAILS VIEWER
-# ==================================================
-
-st.header("👤 Competitor Details Viewer")
-
-competitor_list = pd.read_sql("SELECT name FROM dbo.competitors ORDER BY name", conn)['name']
-selected_competitor = st.selectbox("Select a Competitor", competitor_list)
-
-if selected_competitor:
-    details_query = f"""
-SELECT c.name,
-       c.country,
-       r.rank,
-       r.points
-FROM dbo.competitors c
-JOIN dbo.competitor_rankings r
-ON c.competitor_id = r.competitor_id
-WHERE c.name = '{selected_competitor}';
-"""
-
-
-    details_df = pd.read_sql(details_query, conn)
-    st.table(details_df)
-
-# ==================================================
-# 4️⃣ COUNTRY-WISE ANALYSIS
-# ==================================================
-
-st.header("🌍 Country-Wise Analysis")
-
-country_analysis_query = """
-SELECT c.country,
-       COUNT(*) AS total_competitors,
-       AVG(r.points) AS avg_points
-FROM dbo.competitors c
-JOIN dbo.competitor_rankings r
-ON c.competitor_id = r.competitor_id
-GROUP BY c.country
-ORDER BY total_competitors DESC;
-"""
-
-country_df = pd.read_sql(country_analysis_query, conn)
-st.dataframe(country_df, use_container_width=True)
-
-# ==================================================
-# 5️⃣ LEADERBOARDS
-# ==================================================
-
-st.header("🏆 Leaderboards")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("Top Ranked Competitors")
-    top_ranked_query = """
-    SELECT c.name, c.country, r.rank, r.points
-    FROM dbo.competitors c
-    JOIN dbo.competitor_rankings r
-    ON c.competitor_id = r.competitor_id
-    ORDER BY r.rank ASC
-    OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+    query = """
+        SELECT
+            c.competitor_name,
+            c.country,
+            r.rank,
+            r.points
+        FROM competitors c
+        JOIN competitor_rankings r
+            ON c.competitor_id = r.competitor_id
+        WHERE c.competitor_name LIKE ?
+          AND r.points >= ?
+        ORDER BY r.rank
     """
-    st.dataframe(pd.read_sql(top_ranked_query, conn), use_container_width=True)
 
-with col2:
-    st.subheader("Highest Points Competitors")
-    highest_points_query = """
-    SELECT c.name, c.country, r.rank, r.points
-    FROM dbo.competitors c
-    JOIN dbo.competitor_rankings r
-    ON c.competitor_id = r.competitor_id
-    ORDER BY r.points DESC
-    OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+    df = pd.read_sql(query, conn, params=[f"%{name}%", min_points])
+    st.dataframe(df, use_container_width=True)
+
+# ------------------------------------
+# 3. COMPETITOR DETAILS VIEWER
+# ------------------------------------
+elif menu == "Competitor Details":
+    st.subheader("👤 Competitor Details")
+
+    competitors = pd.read_sql(
+        "SELECT competitor_name FROM competitors ORDER BY competitor_name",
+        conn
+    )
+
+    selected = st.selectbox(
+        "Select Competitor",
+        competitors["competitor_name"]
+    )
+
+    details_query = """
+        SELECT
+            c.competitor_name,
+            c.country,
+            r.rank,
+            r.points,
+            r.movement,
+            r.competitions_played
+        FROM competitors c
+        JOIN competitor_rankings r
+            ON c.competitor_id = r.competitor_id
+        WHERE c.competitor_name = ?
+        ORDER BY r.ranking_date DESC
+        LIMIT 1
     """
-    st.dataframe(pd.read_sql(highest_points_query, conn), use_container_width=True)
 
-conn.close()
+    details = pd.read_sql(details_query, conn, params=[selected])
+    st.table(details)
+
+# ------------------------------------
+# 4. COUNTRY-WISE ANALYSIS
+# ------------------------------------
+elif menu == "Country Analysis":
+    st.subheader("🌍 Country-wise Analysis")
+
+    country_query = """
+        SELECT
+            c.country,
+            COUNT(DISTINCT c.competitor_id) AS total_competitors,
+            AVG(r.points) AS avg_points
+        FROM competitors c
+        JOIN competitor_rankings r
+            ON c.competitor_id = r.competitor_id
+        GROUP BY c.country
+        ORDER BY avg_points DESC
+    """
+
+    df = pd.read_sql(country_query, conn)
+    st.dataframe(df, use_container_width=True)
+
+# ------------------------------------
+# 5. LEADERBOARDS
+# ------------------------------------
+elif menu == "Leaderboards":
+    st.subheader("🏆 Leaderboards")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### Top Ranked Players")
+        top_ranked = pd.read_sql("""
+        SELECT
+            name,
+            country,
+            rank,
+            points
+        FROM competitors
+        ORDER BY rank
+        LIMIT 10;
+        """,
+            conn
+        )
+        st.dataframe(top_ranked, use_container_width=True)
+
+    with col2:
+        st.markdown("### Highest Points")
+        top_points = pd.read_sql(
+            """
+            SELECT
+                c.competitor_name,
+                c.country,
+                r.points
+            FROM competitors c
+            JOIN competitor_rankings r
+                ON c.competitor_id = r.competitor_id
+            ORDER BY r.points DESC
+            LIMIT 10
+            """,
+            conn
+        )
+        st.dataframe(top_points, use_container_width=True)
