@@ -73,6 +73,14 @@ Features Implemented
 ### Tennis-data-insights-app
 [![Streamlit App](https://game-analytics-unlocking-tennis-data-with-sportsradar-api.streamlit.app)
 
+### Project Screenshots
+
+### Dashboard Overview
+![Dashboard](screenshot/Screenshot%20(507).png)
+
+### Data Analysis
+![Analysis](screenshot/Screenshot%20(519).png)
+
 ### Project Members
 
 #### Kumari Akanksha
