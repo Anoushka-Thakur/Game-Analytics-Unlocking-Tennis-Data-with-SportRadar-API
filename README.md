@@ -32,6 +32,14 @@ Each script converts raw data into structured CSV files.
 SQL queries support competition analysis, venue distribution, and ranking insights
 A Streamlit dashboard (developed separately) provides interactive filters, metrics, and leaderboards
 
+## SQL Screenshots
+
+### SQL Overview
+![SQL queries](screenshot/Screenshot%20(522).png)
+
+### Data Analysis
+![SQL queries and results](screenshot/Screenshot%20(523).png)
+
 ### Tech Stack
 Layer      	        Technology
 Database   	        SQLite3
